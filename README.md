@@ -69,10 +69,13 @@ Q-러닝 에이전트가 추측할 클러스터를 선택하면, 실제 단어�
     *   **구현**: `qlearning.py`에 구현된 기본 휴리스틱입니다.
     *   **로직**: 선택된 클러스터 내에서 이전 추측 중 최고/최저 유사도 단어를 기준으로 가장 유망한 단어를 선택합니다. 이전 추측 최고점(`best_similarity`)이 임계값(20)보다 낮으면 최고/최저 유사도 단어와의 평균 유사도가 높은 단어를, 높으면 최고 유사도 단어와의 유사도에서 최저 유사도 단어와의 유사도를 뺀 값이 가장 큰 단어를 선택합니다. 이는 탐색(낮은 점수)과 활용(높은 점수) 간의 균형을 맞추려는 시도입니다.
 
-*   **RNN 기반 휴리스틱 (`src/heuristicrnn.py`의 `RNN` 클래스)**:
+*   **RNN 기반 휴리스틱 (`src/heuristicrnn.py`의 `RNN` 클래스 및 `src/heuristic.ipynb`)**:
     *   **구현**: `heuristicrnn.py`는 PyTorch(`torch.nn`)를 사용하여 RNN 모델(`class RNN`)을 정의하며, 모델 구조 정의(`__init__`), 순전파(`forward`), 손실 계산(`compute_loss`), 모델 저장/로드 기능을 포함합니다.
-    *   **역할**: 이전 추측 단어들의 시퀀스를 입력받아 다음 추측 단어의 벡터나 유사도를 예측하는 데 사용될 수 있습니다 (README 기반 추론).
-    *   **결과**: README에 따르면, RNN 휴리스틱은 탐욕적 휴리스틱의 대안으로 실험되었으나 성공률과 추측 속도 면에서 낮은 성능을 보였습니다.
+    *   **학습 (`heuristic.ipynb`)**: `heuristic.ipynb`는 이 RNN 모델을 학습시키는 코드입니다.
+        *   **데이터 생성**: 무작위 게임 플레이 데이터를 시뮬레이션하여 입력(과거 추측 벡터+점수 시퀀스)과 출력(다음 추측 단어 벡터) 쌍을 생성하고 JSON 파일(`train.json`, `val.json`)로 저장합니다.
+        *   **학습 과정**: 생성된 데이터를 사용하여 PyTorch 학습 루프를 실행합니다. 입력 시퀀스를 받아 다음 추측 단어의 벡터를 예측하도록 모델을 학습시키며, 코사인 유사도 손실 또는 MSE 손실을 사용합니다. 최적 모델은 검증 손실을 기준으로 저장됩니다.
+    *   **역할**: 이전 추측 단어들과 점수 시퀀스를 기반으로 다음 추측 단어의 벡터를 예측하는 방식으로 작동합니다.
+    *   **결과**: README에 따르면, 이 RNN 휴리스틱은 탐욕적 휴리스틱의 대안으로 실험되었으나 성공률과 추측 속도 면에서 낮은 성능을 보였습니다.
 
 *   **대체 휴리스틱 (`Testing/heuristicAlternatives.py`)**:
     *   **구현**: 이 파일에는 `choose_word_from_cluster` 및 `choose_word_from_cluster_modified`와 같은 대체 휴리스틱 함수들이 포함되어 있습니다.
@@ -145,5 +148,6 @@ c.  **엡실론 감쇠**: 한 게임 에피소드가 끝나면 엡실론 값을 
 *   **`src/cluster.ipynb`**: `sklearn`의 `KMeans` 클러스터링 알고리즘을 사용하여 `answers.py`의 단어 목록을 클러스터링하고, UMAP과 Plotly를 이용하여 결과를 시각화하는 Jupyter Notebook입니다.
 *   **`src/qlearning.ipynb`**: **계층적 Q-러닝 구조를 실험한 것으로 보이는 Jupyter Notebook**입니다. `secondLevelClusters.py` 데이터를 사용하고, 계층적 상태(`sub_state`) 및 다른 보상 함수(`clusterReward`)를 정의하는 등 `qlearning.py`와는 다른 구현 방식을 포함합니다.
 *   **`src/parallelQ.ipynb`**: `qlearning.py`의 **단일 에이전트 Q-러닝 학습 과정을 병렬화**하여 속도를 높이려는 시도를 보여주는 Jupyter Notebook입니다. `concurrent.futures`를 사용하여 여러 게임 에피소드를 동시에 실행하고 공유 Q-테이블을 업데이트합니다. 계층적 구조는 사용하지 않으며, `qlearning.py`와는 다른 보상 함수(`get_reward`)를 사용합니다.
+*   **`src/heuristic.ipynb`**: **RNN 기반 휴리스틱 모델(`heuristicrnn.py`)을 학습시키는 Jupyter Notebook**입니다. 학습/검증 데이터 생성(`generate_data`), 데이터 전처리(`get_data_from_json`, `SemantleDataset`), PyTorch 기반 RNN 모델 학습 및 평가 코드를 포함합니다.
 
 이 분석은 AI-Semantle 프로젝트가 Q-러닝, 클러스터링, 휴리스틱을 효과적으로 결합하여 복잡한 자연어 기반 게임인 Semantle을 해결하는 방식을 보여줍니다. 또한 단일 에이전트와 계층적 에이전트, 다양한 휴리스틱과 클러스터링 방법을 실험하며 최적의 접근법을 탐색했음을 시사합니다.
