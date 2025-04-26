@@ -144,5 +144,6 @@ c.  **엡실론 감쇠**: 한 게임 에피소드가 끝나면 엡실론 값을 
 *   **`Testing/Semantle.py`**: Tkinter GUI를 사용하여 사용자가 직접 Semantle 게임을 플레이할 수 있는 환경을 제공합니다. AI 솔버와는 별개인 게임 자체의 구현입니다.
 *   **`src/cluster.ipynb`**: `sklearn`의 `KMeans` 클러스터링 알고리즘을 사용하여 `answers.py`의 단어 목록을 클러스터링하고, UMAP과 Plotly를 이용하여 결과를 시각화하는 Jupyter Notebook입니다.
 *   **`src/qlearning.ipynb`**: **계층적 Q-러닝 구조를 실험한 것으로 보이는 Jupyter Notebook**입니다. `secondLevelClusters.py` 데이터를 사용하고, 계층적 상태(`sub_state`) 및 다른 보상 함수(`clusterReward`)를 정의하는 등 `qlearning.py`와는 다른 구현 방식을 포함합니다.
+*   **`src/parallelQ.ipynb`**: `qlearning.py`의 **단일 에이전트 Q-러닝 학습 과정을 병렬화**하여 속도를 높이려는 시도를 보여주는 Jupyter Notebook입니다. `concurrent.futures`를 사용하여 여러 게임 에피소드를 동시에 실행하고 공유 Q-테이블을 업데이트합니다. 계층적 구조는 사용하지 않으며, `qlearning.py`와는 다른 보상 함수(`get_reward`)를 사용합니다.
 
 이 분석은 AI-Semantle 프로젝트가 Q-러닝, 클러스터링, 휴리스틱을 효과적으로 결합하여 복잡한 자연어 기반 게임인 Semantle을 해결하는 방식을 보여줍니다. 또한 단일 에이전트와 계층적 에이전트, 다양한 휴리스틱과 클러스터링 방법을 실험하며 최적의 접근법을 탐색했음을 시사합니다.
