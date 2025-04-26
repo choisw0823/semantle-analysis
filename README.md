@@ -8,10 +8,10 @@ Semantle은 숨겨진 비밀 단어를 추측하는 게임입니다. 플레이�
 
 이 프로젝트는 Semantle 게임을 해결하기 위해 다음과 같은 주요 구성 요소를 결합한 강화학습 기반 접근 방식을 사용합니다:
 
-*   **Q-러닝 (Q-Learning)**: 어떤 **단어 클러스터**에서 다음 단어를 추측하는 것이 장기적으로 가장 높은 보상(유사도 점수)을 가져올지 학습하는 핵심 의사결정 알고리즘입니다. (`src/qlearning.py`의 `QAgent` 클래스)
+*   **Q-러닝 (Q-Learning)**: 어떤 **단어 클러스터**에서 다음 단어를 추측하는 것이 장기적으로 가장 높은 보상(유사도 점수)을 가져올지 학습하는 핵심 의사결정 알고리즘입니다. (`src/qlearning.py`, `src/qlearning.ipynb` 등에서 구현됨)
 *   **단어 클러스터링 (Word Clustering)**: 방대한 영어 단어들을 의미적 유사성에 따라 그룹화(클러스터링)하여 AI가 탐색해야 할 단어 공간의 복잡성을 줄입니다. (결과는 `src/clusters.py`, `src/secondLevelClusters.py` 등에 저장됨)
 *   **휴리스틱 함수 (Heuristic Function)**: Q-러닝 에이전트가 특정 클러스터를 선택하면, 그 클러스터 내에서 실제로 추측할 가장 유망한 단어를 선택하는 규칙 기반 또는 모델 기반의 함수입니다. (`src/qlearning.py`, `src/heuristicrnn.py`, `Testing/heuristicAlternatives.py` 등에 구현됨)
-*   **(README 기반) 계층적 Q-에이전트 구조**: README에서는 문제의 복잡성을 더 줄이기 위해 메인 Q-에이전트가 하위 Q-에이전트(각각 특정 클러스터 그룹 담당)를 선택하는 계층적 구조를 언급합니다. `src/secondLevelClusters.py`의 존재는 이를 뒷받침할 수 있으나, `qlearning.py`에는 **단일 Q-에이전트**만 구현되어 있습니다.
+*   **계층적 Q-에이전트 구조 (README 언급 및 `qlearning.ipynb` 구현 시도)**: README에서는 문제의 복잡성을 더 줄이기 위해 메인 Q-에이전트가 하위 Q-에이전트(각각 특정 클러스터 그룹 담당)를 선택하는 계층적 구조를 언급합니다. `src/secondLevelClusters.py` 파일은 계층적 클러스터 데이터를 포함하며, **`src/qlearning.ipynb`** 에서는 이 데이터를 로드하고 **계층적 상태(`state`, `sub_state`) 및 관련 로직을 구현**하려는 명확한 시도가 확인됩니다. 반면, `qlearning.py`에는 단일 Q-에이전트만 구현되어 있습니다.
 
 ## 3. 세부 구성 요소 분석
 
@@ -24,37 +24,42 @@ Semantle은 숨겨진 비밀 단어를 추측하는 게임입니다. 플레이�
 
 *   **목적**: 전체 단어 사전을 직접 탐색하는 것은 매우 비효율적이므로, Word2Vec 벡터 공간에서 의미적으로 유사한 단어들을 그룹(클러스터)으로 묶어 탐색 공간을 효과적으로 축소합니다. AI는 개별 단어 대신 클러스터 단위로 탐색 및 학습 전략을 세웁니다.
 *   **방법 및 관련 파일**:
-    *   **클러스터링 알고리즘 및 구현**: README에서 언급되고 `Testing/clusterAl.py`에서 확인된 바와 같이, **`sklearn.cluster.AgglomerativeClustering` (응집형 계층적 클러스터링)**을 사용합니다. `clusterAl.py`에서는 `n_clusters=8`, `metric='euclidean'`, `linkage='ward'` 파라미터를 사용하여 클러스터링을 수행합니다. 실제 클러스터링 결과 생성 코드는 `src/cluster.py` 또는 관련 Jupyter Notebook에 있을 수 있습니다.
-    *   **입력 데이터**: `Testing/clusterAl.py`에서는 클러스터링의 입력으로 `answers.py`에 정의된 **정답 단어 목록(`secretWords`)의 Word2Vec 임베딩 벡터**를 사용합니다. 즉, 가능한 정답 단어들을 기준으로 클러스터링이 수행됩니다.
+    *   **클러스터링 알고리즘**: 이 프로젝트에서는 최소 두 가지 클러스터링 알고리즘이 사용되었습니다:
+        *   **`sklearn.cluster.AgglomerativeClustering` (응집형 계층적 클러스터링)**: README에서 언급되었고 `Testing/clusterAl.py`에서 확인된 방식으로, '상향식'으로 유사한 클러스터를 병합합니다. (`n_clusters=8`, `metric='euclidean'`, `linkage='ward'` 파라미터 사용 예시 확인).
+        *   **`sklearn.cluster.KMeans` (K-평균 클러스터링)**: `src/cluster.ipynb`에서 사용된 방식으로, 미리 지정된 클러스터 수(k=8)를 기준으로 중심점을 찾아 데이터를 그룹화합니다.
+    *   **입력 데이터**: 분석된 코드(`cluster.ipynb`, `Testing/clusterAl.py`) 모두 클러스터링의 입력으로 `answers.py`에 정의된 **정답 단어 목록(`secretWords`)의 Word2Vec 임베딩 벡터**를 사용합니다. 즉, 가능한 정답 단어들을 기준으로 클러스터링을 수행합니다.
     *   **결과 저장**:
-        *   `src/clusters.py`: 클러스터링 결과를 **리스트의 리스트 (`list[list[str]]`)** 형태로 저장합니다. 각 내부 리스트는 하나의 클러스터에 속한 단어 목록입니다.
-        *   `src/secondLevelClusters.py`: 클러스터링 결과를 **리스트의 리스트의 리스트 (`list[list[list[str]]]`)** 라는 더 복잡한 중첩 구조로 저장합니다. 이는 **계층적 클러스터링** (예: 1단계 클러스터 내부에 다시 2단계 클러스터가 있는 구조) 또는 다단계 클러스터링의 결과를 나타낼 수 있습니다. 이는 README에서 언급된 계층적 Q-에이전트 구조와 연관될 수 있습니다.
-    *   **사전 계산 (Pre-computation)**: 클러스터링은 Q-러닝 에이전트 학습이나 추론 이전에 **별도로 미리 수행되는 오프라인 작업**입니다. `qlearning.py`는 `clusters.py` (또는 `secondLevelClusters.py`)에 저장된 이 미리 계산된 클러스터링 결과를 로드하여 활용합니다.
+        *   `src/clusters.py`: 클러스터링 결과를 **리스트의 리스트 (`list[list[str]]`)** 형태로 저장합니다. 각 내부 리스트는 하나의 클러스터에 속한 단어 목록입니다. `qlearning.py`는 이 파일을 로드하여 사용합니다.
+        *   `src/secondLevelClusters.py`: 클러스터링 결과를 **리스트의 리스트의 리스트 (`list[list[list[str]]]`)** 라는 더 복잡한 중첩 구조로 저장합니다. 이는 계층적 또는 다단계 클러스터링 결과 데이터이며, **`src/qlearning.ipynb`에서 계층적 에이전트 구현에 사용됩니다.**
+    *   **시각화**: `src/cluster.ipynb`에서는 UMAP을 이용한 차원 축소와 Plotly 라이브러리를 사용하여 클러스터링 결과를 2차원 공간에 시각화하는 코드를 포함합니다. 이를 통해 클러스터 분포를 확인합니다.
+    *   **사전 계산 (Pre-computation)**: 클러스터링은 Q-러닝 에이전트 학습이나 추론 이전에 **별도로 미리 수행되는 오프라인 작업**입니다. 에이전트 실행 시에는 미리 계산된 클러스터링 결과를 로드하여 활용합니다.
 
-### 3.3. Q-러닝 기반 클러스터 선택 (`qlearning.py` 구현)
+### 3.3. Q-러닝 기반 클러스터 선택
 
-`qlearning.py`에 구현된 단일 Q-러닝 에이전트(`QAgent`)는 다음 요소로 구성됩니다:
+이 프로젝트에서는 두 가지 주요 Q-러닝 구현 방식이 확인됩니다:
 
+**1. 단일 에이전트 (`qlearning.py` 구현)**:
+
+*   **에이전트**: 단일 `QAgent` 클래스.
 *   **상태 (State)**:
-    *   현재 게임 상황을 나타냅니다. 각 클러스터별로 현재까지 얻은 **최고 유사도 점수를 특정 구간(bin)으로 변환**한 값들의 튜플입니다.
-    *   `binSimilarityScore` 함수는 유사도 점수를 `[0, 5, 15, 25]` 구간 기준으로 0~4의 5개 레벨로 변환합니다.
-    *   예: 클러스터 4개 -> 상태 `(1, 3, 0, 2)` (첫 클러스터 최고점 0-4점, 두 번째 15-24점 등)
-    *   목적: 상태 공간의 크기를 줄여 학습 효율성을 높입니다 ("차원의 저주" 완화). 상태 공간 크기 = (구간 수)^(클러스터 수) (e.g., 5^4 = 625).
-*   **행동 (Action)**:
-    *   다음에 단어를 추측할 **클러스터의 인덱스**를 선택하는 것입니다.
-    *   행동의 총 개수 = 로드된 클러스터 리스트(`clusters`)의 길이 (`num_clusters`).
-*   **보상 (Reward)**:
-    *   행동(클러스터 선택) 후 휴리스틱 함수가 선택한 단어를 추측했을 때 얻는 **실제 유사도 점수** (`similarity_score`, `guess_word` 함수의 반환값).
-*   **Q-테이블 (Q-Table)**:
-    *   상태-행동 쌍에 대한 **미래 보상 기댓값 (Q-값)**을 저장하는 딕셔너리 (`q_table`).
-    *   `q_table[state][action]` = 상태 `state`에서 행동 `action`(클러스터 선택)을 했을 때의 Q-값.
-*   **Q-값 업데이트**:
-    *   `update` 함수는 표준 Q-러닝 업데이트 공식을 사용하여 Q-테이블을 업데이트합니다:
-        \[ Q(s, a) \leftarrow Q(s, a) + \alpha \left[ r + \gamma \max_{a'} Q(s', a') - Q(s, a) \right] \]
-    *   코드 내 설정된 값: 학습률 \( \alpha = 0.3 \), 할인율 \( \gamma = 0.75 \).
-*   **탐험/활용 전략**:
-    *   **엡실론-탐욕 (Epsilon-Greedy)**: `choose_action` 함수는 확률 \( \epsilon \)으로 무작위 클러스터 선택 (탐험), \( 1-\epsilon \) 확률로 현재 상태에서 Q-값이 가장 높은 클러스터 선택 (활용)합니다.
-    *   **엡실론 감쇠 (Epsilon Decay)**: `decayEpsilon` 함수는 게임 진행에 따라 \( \epsilon \) 값을 1.0에서 0.01까지 점차 감소시켜 탐험 비중을 줄이고 활용 비중을 높입니다 (`epsilon_decay = 0.04`).
+    *   각 클러스터별 최고 유사도 점수를 구간(bin)으로 변환한 값들의 **단일 튜플** (`tuple`).
+    *   `binSimilarityScore` 함수: `[0, 5, 15, 25]` 구간 기준 5개 레벨 변환.
+*   **행동 (Action)**: 다음에 추측할 클러스터의 인덱스 (단일 값).
+*   **보상 (Reward)**: 선택된 클러스터에서 휴리스틱으로 추측한 단어의 **실제 유사도 점수** (휴리스틱 함수의 반환값).
+*   **Q-테이블 (Q-Table)**: `q_table[state][action]` 형태의 딕셔너리.
+*   **Q-값 업데이트**: 표준 Q-러닝 업데이트 공식을 사용 (\( \alpha=0.3, \gamma=0.75 \)).
+*   **탐험/활용**: 엡실론-탐욕 및 엡실론 감쇠 사용.
+
+**2. 계층적 에이전트 시도 (`qlearning.ipynb` 구현 부분 분석)**:
+
+*   **에이전트**: 계층적 구조를 위한 `Environment` 클래스 변경 (별도 `QAgent` 클래스 구조는 추가 확인 필요).
+*   **상태 (State)**:
+    *   **상위 상태 (`state`)**: `qlearning.py`와 유사하게 상위 클러스터 상태 관리.
+    *   **하위 상태 (`sub_state`)**: 각 상위 클러스터 내의 **하위 클러스터별 최고 유사도 점수를 구간으로 변환**한 값들의 **2차원 리스트** (`list[list[int]]`).
+    *   `bin_similarity_score` 함수: `[0, 15, 25, 50]` 구간 기준 4개 레벨 변환.
+*   **행동 (Action)**: 명시적 정의는 추가 확인 필요하나, `guess_word` 함수가 `top_action`(상위 클러스터)과 `sub_action`(하위 클러스터)을 모두 받는 것으로 보아 계층적 행동 선택 로직 포함.
+*   **보상 (Reward)**: **선택한 (상위) 클러스터에 실제 정답 단어가 포함되어 있는지 여부**에 따라 큰 보상/패널티를 주는 방식 (`clusterReward`)으로 변경. 실제 유사도 점수 기반 보상은 제거됨.
+*   **Q-테이블 및 업데이트**: 구체적인 Q-테이블 구조 및 업데이트 방식은 해당 노트북의 추가 분석 필요.
 
 ### 3.4. 휴리스틱 기반 단어 선택
 
@@ -67,11 +72,11 @@ Q-러닝 에이전트가 추측할 클러스터를 선택하면, 실제 단어�
 *   **RNN 기반 휴리스틱 (`src/heuristicrnn.py`의 `RNN` 클래스)**:
     *   **구현**: `heuristicrnn.py`는 PyTorch(`torch.nn`)를 사용하여 RNN 모델(`class RNN`)을 정의하며, 모델 구조 정의(`__init__`), 순전파(`forward`), 손실 계산(`compute_loss`), 모델 저장/로드 기능을 포함합니다.
     *   **역할**: 이전 추측 단어들의 시퀀스를 입력받아 다음 추측 단어의 벡터나 유사도를 예측하는 데 사용될 수 있습니다 (README 기반 추론).
-    *   **결과**: README에 따르면, RNN 휴리스틱은 탐욕적 휴리스틱보다 성공률과 추측 속도 면에서 낮은 성능을 보였습니다.
+    *   **결과**: README에 따르면, RNN 휴리스틱은 탐욕적 휴리스틱의 대안으로 실험되었으나 성공률과 추측 속도 면에서 낮은 성능을 보였습니다.
 
 *   **대체 휴리스틱 (`Testing/heuristicAlternatives.py`)**:
-    *   **구현**: 이 파일에는 `choose_word_from_cluster` 및 `choose_word_from_cluster_modified`와 같은 함수들이 포함되어 있습니다.
-    *   **역할**: `qlearning.py`의 기본 탐욕적 휴리스틱 외에, 다른 단어 선택 전략(예: 유사도 행렬 사용)을 구현하고 실험하기 위한 코드입니다.
+    *   **구현**: 이 파일에는 `choose_word_from_cluster` 및 `choose_word_from_cluster_modified`와 같은 대체 휴리스틱 함수들이 포함되어 있습니다.
+    *   **역할**: `qlearning.py`의 기본 탐욕적 휴리스틱 외에 다른 단어 선택 전략(예: 유사도 행렬 사용)을 구현하고 비교 실험하는 데 사용된 코드입니다.
 
 ### 3.5. 학습 과정 상세
 
@@ -108,7 +113,7 @@ c.  **엡실론 감쇠**: 한 게임 에피소드가 끝나면 엡실론 값을 
 
 ## 4. 전체 워크플로우 요약
 
-1.  **(사전 준비)** `answers.py`의 정답 목록을 사용하여 단어 클러스터링 수행 및 결과 저장 (`clusters.py`, `secondLevelClusters.py` 등 생성. 예: `Testing/clusterAl.py` 참고).
+1.  **(사전 준비)** `answers.py`의 정답 목록을 사용하여 단어 클러스터링 수행 (`sklearn.cluster.AgglomerativeClustering` 또는 `KMeans` 등 사용) 및 결과 저장 (`clusters.py`, `secondLevelClusters.py` 등 생성. `Testing/clusterAl.py`, `src/cluster.ipynb` 참고).
 2.  **(학습 단계)** `qlearning.py`를 실행하여 다수의 게임 플레이를 통해 Q-테이블 학습.
 3.  **(추론/테스트 단계)** 학습된 Q-테이블과 낮은 엡실론 값을 사용하여 실제 게임 플레이 (예: `Testing/runSingle.py` 사용). 또한, `Testing/Semantle.py`를 통해 사용자가 직접 게임 플레이 가능.
 
@@ -116,26 +121,28 @@ c.  **엡실론 감쇠**: 한 게임 에피소드가 끝나면 엡실론 값을 
 
 *   탐욕적 휴리스틱을 사용한 AI는 50번의 추측 내에서 **79.2%**의 게임을 성공적으로 해결했습니다.
 *   RNN 기반 휴리스틱은 성공률(50.1%)과 추측 속도 면에서 탐욕적 방식보다 성능이 낮았습니다.
-*   엡실론 감쇠 전략은 효과적이어서, 10,000 게임 동안 Q-에이전트가 가능한 상태의 상당 부분(약 600/625개)을 탐색할 수 있었습니다.
+*   엡실론 감쇠 전략은 효과적이어서, 10,000 게임 동안 Q-에이전트가 가능한 상태의 상당 부분(약 600/625개)을 탐색했습니다.
 
 ## 6. README와 코드 구현 간의 확인된 차이점 및 연결점
 
 `README.md`의 설명과 실제 코드 구현 사이에는 다음과 같은 명확한 차이점 및 연결점이 존재합니다:
 
-*   **Q-에이전트 구조**: `README.md`는 "계층적 Q-에이전트" 구조를 언급하지만, `qlearning.py`에는 **단일 `QAgent` 클래스**만 구현되어 있습니다. 하지만 `src/secondLevelClusters.py`의 존재는 계층적 클러스터링이 수행되었고, 이를 활용하는 다른 버전의 (계층적) 에이전트가 존재했을 가능성을 시사합니다.
+*   **Q-에이전트 구조**: `README.md`는 "계층적 Q-에이전트" 구조를 언급합니다. `qlearning.py`에는 **단일 `QAgent` 클래스**만 구현되어 있지만, **`src/qlearning.ipynb`에서는 `secondLevelClusters.py` 데이터를 활용하여 계층적 상태 및 관련 로직을 구현하려는 명확한 시도**가 확인됩니다. 이는 README의 설명을 뒷받침하는 실험 코드가 존재함을 의미합니다.
 
-*   **사용된 휴리스틱 함수**: `README.md`는 탐욕적 휴리스틱과 RNN 휴리스틱을 모두 언급합니다. `qlearning.py`의 핵심 학습 루프는 **탐욕적 휴리스틱 함수만 명시적으로 호출**하지만, RNN 휴리스틱 구현(`heuristicrnn.py`)과 대체 휴리스틱 구현(`Testing/heuristicAlternatives.py`)이 별도로 존재하여 README의 설명을 뒷받침합니다.
+*   **사용된 휴리스틱 함수**: `README.md`는 탐욕적 휴리스틱과 RNN 휴리스틱을 모두 언급합니다. `qlearning.py`의 핵심 학습 루프는 **탐욕적 휴리스틱 함수만 명시적으로 호출**하지만, RNN 휴리스틱 구현(`heuristicrnn.py`)과 대체 휴리스틱 구현(`Testing/heuristicAlternatives.py`)이 별도로 존재합니다. **`qlearning.ipynb`에서는 `heuristicrnn`과 `torch`를 임포트하는 것으로 보아 RNN 휴리스틱을 통합했을 가능성**이 있습니다.
 
-*   **클러스터링**: `README.md`에서 언급된 **응집형 계층적 클러스터링**은 `Testing/clusterAl.py`에서 `sklearn` 라이브러리를 통해 구현된 것을 확인할 수 있습니다. 다만, `qlearning.py`는 클러스터링을 직접 수행하지 않고 `clusters.py` 등에서 **사전에 생성된 클러스터 데이터**를 로드하여 사용합니다.
+*   **클러스터링**: `README.md`에서 언급된 **응집형 계층적 클러스터링**은 `Testing/clusterAl.py`에서 `sklearn` 라이브러리를 통해 구현된 것을 확인할 수 있으며, `src/cluster.ipynb`에서는 **KMeans 클러스터링** 사용이 확인됩니다. 이는 프로젝트에서 여러 클러스터링 방법을 시도했음을 보여줍니다. `qlearning.py`는 단일 레벨 클러스터(`clusters.py`)를, **`qlearning.ipynb`는 계층적 클러스터(`secondLevelClusters.py`)를 사용**하는 것으로 보입니다.
 
-이러한 점들을 종합해 볼 때, `README.md`는 프로젝트의 전체적인 설계와 다양한 실험(계층적 에이전트, RNN 휴리스틱 등)을 포괄적으로 설명하는 반면, `qlearning.py`는 특정 버전(탐욕적 휴리스틱을 사용한 단일 Q-에이전트 학습)의 코드를 보여주는 것으로 해석할 수 있습니다.
+이러한 차이점들은 `README.md`가 프로젝트의 전체적인 설계와 다양한 실험(계층적 에이전트, RNN 휴리스틱, 다양한 클러스터링 방법 등)을 포괄적으로 설명하는 반면, `qlearning.py`는 특정 버전(탐욕적 휴리스틱을 사용한 단일 Q-에이전트 학습)의 코드를 보여주는 것으로 해석됩니다.
 
 ## 7. 기타 관련 파일 분석 (확인된 내용)
 
 *   **`src/answers.py`**: Semantle 게임의 가능한 정답 단어 목록인 `secretWords` 변수를 파이썬 리스트 형태로 정의하고 있습니다. `qlearning.py` 및 테스트 코드들에서 게임 환경 설정 시 이 리스트를 사용합니다.
-*   **`Testing/heuristicAlternatives.py`**: `qlearning.py`의 기본 탐욕적 휴리스틱 외에, `choose_word_from_cluster_modified` 등 다른 단어 선택 전략을 구현한 함수들을 포함하고 있습니다. 이는 휴리스틱 전략 비교 실험에 사용될 수 있습니다.
+*   **`Testing/heuristicAlternatives.py`**: `qlearning.py`의 기본 탐욕적 휴리스틱 외에, `choose_word_from_cluster_modified` 등 다른 단어 선택 전략을 구현한 함수들을 포함하고 있습니다. 이는 휴리스틱 전략 비교 실험에 사용된 코드입니다.
 *   **`Testing/runSingle.py`**: `run_single_game` 함수를 정의하고 있습니다. 이 함수는 학습된 Q-에이전트(`q_agent`)와 특정 설정을 이용하여 단일 Semantle 게임을 실행하고 결과를 관찰/평가하는 데 사용됩니다.
-*   **`Testing/clusterAl.py`**: `sklearn`의 `AgglomerativeClustering`을 사용하여 `answers.py`의 단어 목록에 대한 클러스터링을 수행하는 예시 또는 실제 사용 코드를 포함합니다. 클러스터링 파라미터(8개 클러스터, 유클리드 거리, ward 연결)를 확인할 수 있습니다.
+*   **`Testing/clusterAl.py`**: `sklearn`의 `AgglomerativeClustering`을 사용하여 `answers.py`의 단어 목록에 대한 클러스터링을 수행하는 예시 코드를 포함합니다. 클러스터링 파라미터(8개 클러스터, 유클리드 거리, ward 연결)를 확인할 수 있습니다.
 *   **`Testing/Semantle.py`**: Tkinter GUI를 사용하여 사용자가 직접 Semantle 게임을 플레이할 수 있는 환경을 제공합니다. AI 솔버와는 별개인 게임 자체의 구현입니다.
+*   **`src/cluster.ipynb`**: `sklearn`의 `KMeans` 클러스터링 알고리즘을 사용하여 `answers.py`의 단어 목록을 클러스터링하고, UMAP과 Plotly를 이용하여 결과를 시각화하는 Jupyter Notebook입니다.
+*   **`src/qlearning.ipynb`**: **계층적 Q-러닝 구조를 실험한 것으로 보이는 Jupyter Notebook**입니다. `secondLevelClusters.py` 데이터를 사용하고, 계층적 상태(`sub_state`) 및 다른 보상 함수(`clusterReward`)를 정의하는 등 `qlearning.py`와는 다른 구현 방식을 포함합니다.
 
-이 분석은 AI-Semantle 프로젝트가 Q-러닝, 클러스터링, 휴리스틱을 효과적으로 결합하여 복잡한 자연어 기반 게임인 Semantle을 해결하는 방식을 보여줍니다.
+이 분석은 AI-Semantle 프로젝트가 Q-러닝, 클러스터링, 휴리스틱을 효과적으로 결합하여 복잡한 자연어 기반 게임인 Semantle을 해결하는 방식을 보여줍니다. 또한 단일 에이전트와 계층적 에이전트, 다양한 휴리스틱과 클러스터링 방법을 실험하며 최적의 접근법을 탐색했음을 시사합니다.
